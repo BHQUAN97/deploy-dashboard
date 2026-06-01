@@ -26,7 +26,7 @@ export function DeployDrawer({ project, runId, open, onClose }: Props) {
     if (!open || !runId || !project) return
     setJobs([]); setDone(false); setConclusion(null); setRunUrl('')
 
-    const es = new EventSource(`/api/deploy/${runId}/stream?repo=${project.repo}`)
+    const es = new EventSource(`/api/runs/${runId}/stream?repo=${project.repo}`)
     esRef.current = es
 
     es.onmessage = (e) => {
