@@ -7,6 +7,11 @@ on:
       - '*.md'
       - '.sdd/**'
   workflow_dispatch:
+    inputs:
+      setup_domain:
+        description: 'Setup monitor.bhquan.store SSL cert (polls DNS, runs certbot)'
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-dashboard
@@ -92,3 +97,60 @@ jobs:
             export PATH=\$PATH:/usr/local/bin
             docker exec shared-nginx nginx -t 2>&1 && docker exec shared-nginx nginx -s reload && echo 'nginx reloaded'
           "
+
+      - name: Setup SSL for monitor.bhquan.store
+        if: ${{ inputs.setup_domain == true }}
+        run: |
+          sudo apt-get install -y -qq dnsutils > /dev/null
+          VPS="${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
+          PORT="${{ secrets.VPS_PORT }}"
+          VPS_IP="${{ secrets.VPS_HOST }}"
+
+          # Ghi HTTP-only conf truoc de certbot webroot hoat dong
+          sshpass -e ssh -p $PORT $VPS "
+            rm -f /opt/infra/nginx/conf.d/deploy-dashboard.bhquan.store.conf
+            printf 'server {\n    listen 80;\n    server_name monitor.bhquan.store;\n    location /.well-known/acme-challenge/ { root /var/www/certbot; }\n    location / { return 301 https://monitor.bhquan.store\$request_uri; }\n}\n' \
+              > /opt/infra/nginx/conf.d/monitor.bhquan.store.conf
+            docker exec shared-nginx nginx -t 2>&1 && docker exec shared-nginx nginx -s reload
+            echo 'HTTP conf uploaded'
+          "
+
+          # Poll DNS (max 30 min)
+          echo "Waiting for DNS: monitor.bhquan.store -> $VPS_IP"
+          for i in $(seq 1 30); do
+            RESOLVED=$(dig +short monitor.bhquan.store @8.8.8.8 2>/dev/null | head -1)
+            echo "[$i/30] resolved='$RESOLVED'"
+            if [ "$RESOLVED" = "$VPS_IP" ]; then echo "DNS OK"; break; fi
+            if [ $i -eq 30 ]; then echo "::error::DNS timeout. Set monitor.bhquan.store A $VPS_IP then re-run."; exit 1; fi
+            sleep 60
+          done
+
+          # Certbot
+          sshpass -e ssh -p $PORT $VPS "
+            docker exec infra-certbot certbot certonly \
+              --webroot -w /var/www/certbot \
+              -d monitor.bhquan.store \
+              --email buihongquan28041997@gmail.com \
+              --agree-tos --non-interactive --force-renewal
+            echo 'Certbot done'
+          "
+
+          # Upload HTTPS conf + reload
+          sshpass -e scp -P $PORT infra/nginx/conf.d/monitor.bhquan.store.conf \
+            $VPS:/opt/infra/nginx/conf.d/monitor.bhquan.store.conf
+          sshpass -e ssh -p $PORT $VPS "
+            docker exec shared-nginx nginx -t 2>&1 && docker exec shared-nginx nginx -s reload
+            echo 'HTTPS nginx reloaded'
+
+            # Cleanup old cert
+            docker exec infra-certbot rm -rf \
+              /etc/letsencrypt/live/deploy-dashboard.bhquan.store \
+              /etc/letsencrypt/archive/deploy-dashboard.bhquan.store \
+              /etc/letsencrypt/renewal/deploy-dashboard.bhquan.store.conf 2>/dev/null || true
+            echo 'Old cert cleaned'
+          "
+
+          echo "========================================"
+          echo "monitor.bhquan.store is ready!"
+          echo "Login: admin / Deploy@2026!"
+          echo "========================================"
