@@ -86,8 +86,8 @@ jobs:
         run: |
           VPS="${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
           PORT="${{ secrets.VPS_PORT }}"
-          sshpass -e scp -P $PORT infra/nginx/conf.d/deploy-dashboard.bhquan.store.conf \
-            $VPS:/opt/infra/nginx/conf.d/deploy-dashboard.bhquan.store.conf
+          sshpass -e scp -P $PORT infra/nginx/conf.d/monitor.bhquan.store.conf \
+            $VPS:/opt/infra/nginx/conf.d/monitor.bhquan.store.conf
           sshpass -e ssh -p $PORT $VPS "
             export PATH=\$PATH:/usr/local/bin
             docker exec shared-nginx nginx -t 2>&1 && docker exec shared-nginx nginx -s reload && echo 'nginx reloaded'

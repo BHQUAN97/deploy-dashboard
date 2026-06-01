@@ -15,7 +15,7 @@
 | GEO Tracker | geo-tracker | master | photostorage.cloud | 3001 | 3000 | Next.js 15 + Fastify |
 | WebTemplate | WebTemplate | main | template.bhquan.store | 6000 | 6001 | Next.js + NestJS |
 | WebPhoto | webphoto | main | photo.bhquan.store | — | 4000→7100 | Vue 3 + Express |
-| DeployDashboard | deploy-dashboard | main | deploy-dashboard.bhquan.store | — | 7000 | Next.js 16 |
+| DeployDashboard | deploy-dashboard | main | monitor.bhquan.store | — | 7000 | Next.js 16 |
 
 ---
 
@@ -175,7 +175,7 @@ free -h
 # 4. Test HTTP tất cả domains
 for d in bhquan.store shop.bhquan.store lqd.bhquan.store \
           photostorage.cloud photo.bhquan.store template.bhquan.store \
-          deploy-dashboard.bhquan.store; do
+          monitor.bhquan.store; do
   code=$(curl -sk -o /dev/null -w "%{http_code}" https://$d/ --max-time 5)
   echo "$d → $code"
 done

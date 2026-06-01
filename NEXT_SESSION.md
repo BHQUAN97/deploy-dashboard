@@ -31,18 +31,18 @@
 
 ## 🔴 Việc cần làm NGAY (trước khi làm việc khác)
 
-### 1. DNS deploy-dashboard.bhquan.store (USER tự làm)
+### 1. DNS monitor.bhquan.store (USER tự làm)
 ```
-deploy-dashboard.bhquan.store  →  A  →  159.223.77.247
+monitor.bhquan.store  →  A  →  159.223.77.247
 ```
 Sau khi DNS propagate, chạy lệnh này để lấy SSL cert thật:
 ```bash
 ssh root@159.223.77.247
-docker exec infra-certbot rm -rf /etc/letsencrypt/live/deploy-dashboard.bhquan.store \
-  /etc/letsencrypt/archive/deploy-dashboard.bhquan.store \
-  /etc/letsencrypt/renewal/deploy-dashboard.bhquan.store.conf
+docker exec infra-certbot rm -rf /etc/letsencrypt/live/monitor.bhquan.store \
+  /etc/letsencrypt/archive/monitor.bhquan.store \
+  /etc/letsencrypt/renewal/monitor.bhquan.store.conf
 docker exec infra-certbot certbot certonly --webroot -w /var/www/certbot \
-  -d deploy-dashboard.bhquan.store \
+  -d monitor.bhquan.store \
   --email buihongquan28041997@gmail.com --agree-tos --non-interactive
 docker exec shared-nginx nginx -s reload
 ```
@@ -232,7 +232,7 @@ VPS 159.223.77.247
 ├── tracker-api + tracker-dashboard + tracker-plausible → photostorage.cloud
 ├── wt-backend + wt-frontend → template.bhquan.store
 ├── photo-api + photo-worker → photo.bhquan.store
-└── deploy-dashboard → deploy-dashboard.bhquan.store (port 7000)
+└── deploy-dashboard → monitor.bhquan.store (port 7000)
 
 Network: webphoto_backend — tất cả containers phải có mặt
 ```

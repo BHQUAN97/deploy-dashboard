@@ -56,7 +56,7 @@ EventSource only supports GET. POST endpoints (`/api/vps/certbot`, `/api/vps/net
 ### Deployment
 - Docker multi-stage standalone build, port 7000
 - Container connects to `webphoto_backend` Docker network (shared with all VPS projects) — nginx proxies by container name
-- Nginx conf: `infra/nginx/conf.d/deploy-dashboard.bhquan.store.conf`
+- Nginx conf: `infra/nginx/conf.d/monitor.bhquan.store.conf`
 - CI/CD: `.github/workflows/deploy.yml` — does `git pull` + `docker build` on VPS (not on runner)
 
 ## Adding a New Project
