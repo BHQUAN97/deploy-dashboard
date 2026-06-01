@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
   const [activeRunId, setActiveRunId] = useState<number | null>(null)
+  const [backingUpProject, setBackingUpProject] = useState<string | null>(null)
 
   const loadHealth = useCallback(async () => {
     setLoadingHealth(true)
@@ -52,6 +53,13 @@ export default function DashboardPage() {
     })
   }
 
+  function handleBackupStart(projectId: string, runId: number | null) {
+    setBackingUpProject(projectId)
+    setActiveProjectId(projectId)
+    setActiveRunId(runId)
+    setDrawerOpen(true)
+  }
+
   function handleDrawerClose() {
     setDrawerOpen(false)
     setTimeout(loadStatus, 5000)
@@ -63,6 +71,7 @@ export default function DashboardPage() {
         return next
       })
     }
+    setBackingUpProject(null)
   }
 
   return (
@@ -76,8 +85,10 @@ export default function DashboardPage() {
         healthMap={healthMap}
         statusMap={statusMap}
         loadingHealth={loadingHealth}
-        deployingProject={activeProjectId && drawerOpen ? activeProjectId : null}
+        deployingProject={activeProjectId && drawerOpen && !backingUpProject ? activeProjectId : null}
         onDeployStart={handleDeployStart}
+        backingUpProject={backingUpProject && drawerOpen ? backingUpProject : null}
+        onBackupStart={handleBackupStart}
       />
 
       <DeployDrawer

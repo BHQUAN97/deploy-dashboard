@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { StatusBadge } from './StatusBadge'
 import { SslBadge } from './SslBadge'
 import { DeployButton } from './DeployButton'
+import { BackupButton } from './BackupButton'
 import { ExternalLink, Clock, CheckCircle2, XCircle } from 'lucide-react'
 
 interface Props {
@@ -15,9 +16,11 @@ interface Props {
   latestRun: RunInfo | null
   isDeploying: boolean
   onDeployStart: (runId: number | null) => void
+  isBackingUp?: boolean
+  onBackupStart?: (runId: number | null) => void
 }
 
-export function ProjectCard({ project, health, loadingHealth, latestRun, isDeploying, onDeployStart }: Props) {
+export function ProjectCard({ project, health, loadingHealth, latestRun, isDeploying, onDeployStart, isBackingUp = false, onBackupStart }: Props) {
   const isError = health && (!health.reachable || (health.httpStatus ?? 0) >= 400)
   const isOk = health?.reachable && health.httpStatus && health.httpStatus < 400
   const border = isDeploying
@@ -78,6 +81,9 @@ export function ProjectCard({ project, health, loadingHealth, latestRun, isDeplo
         )}
 
         <DeployButton project={project} isDeploying={isDeploying} onDeployStart={onDeployStart} />
+        {project.backupWorkflow && onBackupStart && (
+          <BackupButton project={project} isRunning={isBackingUp} onBackupStart={onBackupStart} />
+        )}
       </CardContent>
     </Card>
   )

@@ -10,9 +10,11 @@ interface Props {
   loadingHealth: boolean
   deployingProject: string | null
   onDeployStart: (projectId: string, runId: number | null) => void
+  backingUpProject?: string | null
+  onBackupStart?: (projectId: string, runId: number | null) => void
 }
 
-export function ProjectGrid({ healthMap, statusMap, loadingHealth, deployingProject, onDeployStart }: Props) {
+export function ProjectGrid({ healthMap, statusMap, loadingHealth, deployingProject, onDeployStart, backingUpProject, onBackupStart }: Props) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {PROJECTS.map(project => {
@@ -26,6 +28,8 @@ export function ProjectGrid({ healthMap, statusMap, loadingHealth, deployingProj
             latestRun={status?.latestRun ?? null}
             isDeploying={deployingProject === project.id || (status?.isDeploying ?? false)}
             onDeployStart={runId => onDeployStart(project.id, runId)}
+            isBackingUp={backingUpProject === project.id}
+            onBackupStart={onBackupStart ? (runId) => onBackupStart(project.id, runId) : undefined}
           />
         )
       })}

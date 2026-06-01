@@ -1,6 +1,7 @@
 import { CertTable } from '@/components/maintenance/CertTable'
 import { NetworkPanel } from '@/components/maintenance/NetworkPanel'
 import { SeedPanel } from '@/components/maintenance/SeedPanel'
+import { BackupAllPanel } from '@/components/maintenance/BackupAllPanel'
 import { Separator } from '@/components/ui/separator'
 
 export default function MaintenancePage() {
@@ -37,6 +38,16 @@ export default function MaintenancePage() {
           <p className="text-xs text-zinc-500 mt-0.5">Chạy seed scripts trên production containers</p>
         </div>
         <SeedPanel />
+      </section>
+
+      <Separator className="bg-zinc-800" />
+
+      <section className="space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-200">Database Backup</h3>
+          <p className="text-xs text-zinc-500 mt-0.5">Trigger manual backup — dump DB, encrypt GPG, push git branch</p>
+        </div>
+        <BackupAllPanel />
       </section>
     </div>
   )

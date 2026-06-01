@@ -24,6 +24,8 @@ export interface ProjectConfig {
   icon: string                // emoji icon
   containers: string[]
   deployWorkflow: string
+  backupWorkflow?: string     // 'backup.yml' nếu có
+  backupDatabase?: string     // tên DB cần backup
   seedScripts: SeedScript[]
   containerForSeed?: string
   demoCredentials?: DemoCredentials
@@ -50,6 +52,8 @@ export const PROJECTS: ProjectConfig[] = [
       { id: 'seed-products-20', label: '20 Products với 10 ảnh mỗi sản phẩm' },
       { id: 'seed-demo-data', label: 'Full demo content (35 categories, 20 projects, 23 articles)' },
     ],
+    backupWorkflow: 'backup.yml',
+    backupDatabase: 'vietnet',
     containerForSeed: 'vietnet-api',
     demoCredentials: {
       adminUrl: 'https://bhquan.store/admin',
@@ -72,6 +76,8 @@ export const PROJECTS: ProjectConfig[] = [
     icon: '👗',
     containers: ['fashionecom-frontend', 'fashionecom-api'],
     deployWorkflow: 'deploy.yml',
+    backupWorkflow: 'backup.yml',
+    backupDatabase: 'fashionecom',
     seedScripts: [],
     demoCredentials: {
       adminUrl: 'https://shop.bhquan.store/admin',
@@ -93,6 +99,8 @@ export const PROJECTS: ProjectConfig[] = [
     icon: '🏫',
     containers: ['lqd-frontend', 'lqd-api'],
     deployWorkflow: 'deploy.yml',
+    backupWorkflow: 'backup.yml',
+    backupDatabase: 'lequydon',
     seedScripts: [],
     demoCredentials: {
       adminUrl: 'https://lqd.bhquan.store/admin',
@@ -136,6 +144,8 @@ export const PROJECTS: ProjectConfig[] = [
     icon: '🌐',
     containers: ['wt-frontend', 'wt-backend'],
     deployWorkflow: 'deploy.yml',
+    backupWorkflow: 'backup.yml',
+    backupDatabase: 'webtemplate',
     seedScripts: [],
     demoCredentials: {
       adminUrl: 'https://template.bhquan.store/admin',
@@ -157,6 +167,8 @@ export const PROJECTS: ProjectConfig[] = [
     icon: '📷',
     containers: ['photo-api', 'photo-worker'],
     deployWorkflow: 'deploy.yml',
+    backupWorkflow: 'backup.yml',
+    backupDatabase: 'photo_storage',
     seedScripts: [],
     demoCredentials: {
       adminUrl: 'https://photo.bhquan.store',
