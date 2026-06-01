@@ -2,6 +2,8 @@ name: Setup monitor.bhquan.store
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [init-monitor-ssl]
 
 jobs:
   setup:
