@@ -1,0 +1,20 @@
+import { NextRequest } from 'next/server'
+import { createSshStream, SSE_HEADERS } from '@/lib/ssh-client'
+import { NETWORKS_TO_FIX, NETWORK_CONTAINERS } from '@/config/vps-domains'
+
+export const dynamic = 'force-dynamic'
+
+export async function POST(_req: NextRequest) {
+  const connectCmds = NETWORK_CONTAINERS.map(
+    c => `docker network connect ${NETWORKS_TO_FIX} ${c} 2>/dev/null && echo "Connected: ${c}" || echo "Skip (already/not found): ${c}"`
+  ).join('\n')
+
+  const cmd = `
+export PATH=$PATH:/usr/local/bin
+${connectCmds}
+docker exec shared-nginx nginx -t 2>&1 && docker exec shared-nginx nginx -s reload 2>&1 && echo "nginx reloaded"
+echo "Done: all containers checked"
+`.trim()
+
+  return new Response(createSshStream(cmd, 60000), { headers: SSE_HEADERS })
+}

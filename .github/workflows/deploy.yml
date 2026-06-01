@@ -1,0 +1,94 @@
+name: Deploy Dashboard
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - '.sdd/**'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dashboard
+  cancel-in-progress: true
+
+env:
+  APP_DIR: /opt/deploy-dashboard
+  IMAGE_NAME: deploy-dashboard
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass > /dev/null
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          echo "SSHPASS=${{ secrets.VPS_PASSWORD }}" >> $GITHUB_ENV
+
+      - name: Create .env on VPS
+        run: |
+          VPS="${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
+          PORT="${{ secrets.VPS_PORT }}"
+          sshpass -e ssh -p $PORT $VPS "mkdir -p ${APP_DIR}"
+          cat > /tmp/dashboard.env << 'EOF'
+          GITHUB_OWNER=BHQUAN97
+          VPS_HOST=${{ secrets.VPS_HOST }}
+          VPS_PORT=${{ secrets.VPS_PORT }}
+          VPS_USER=${{ secrets.VPS_USER }}
+          NODE_ENV=production
+          PORT=7000
+          EOF
+          printf 'GITHUB_TOKEN=%s\n' "${{ secrets.GITHUB_TOKEN }}" >> /tmp/dashboard.env
+          printf 'VPS_PASSWORD=%s\n' "${{ secrets.VPS_PASSWORD }}" >> /tmp/dashboard.env
+          printf 'CERTBOT_EMAIL=%s\n' "${{ secrets.CERTBOT_EMAIL }}" >> /tmp/dashboard.env
+          printf 'DASHBOARD_USER=%s\n' "${{ secrets.DASHBOARD_USER }}" >> /tmp/dashboard.env
+          printf 'DASHBOARD_PASS=%s\n' "${{ secrets.DASHBOARD_PASS }}" >> /tmp/dashboard.env
+          sshpass -e scp -P $PORT /tmp/dashboard.env $VPS:${APP_DIR}/.env
+          rm -f /tmp/dashboard.env
+
+      - name: Build Docker image on VPS
+        run: |
+          VPS="${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
+          PORT="${{ secrets.VPS_PORT }}"
+          sshpass -e ssh -p $PORT $VPS "
+            export PATH=\$PATH:/usr/local/bin
+            cd ${APP_DIR}
+            git pull origin main 2>/dev/null || (git init && git remote add origin https://github.com/BHQUAN97/deploy-dashboard.git && git pull origin main)
+            docker build -t ${IMAGE_NAME}:latest . 2>&1 | tail -5
+            echo 'Build done'
+          "
+
+      - name: Deploy container
+        run: |
+          VPS="${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
+          PORT="${{ secrets.VPS_PORT }}"
+          sshpass -e ssh -p $PORT $VPS "
+            export PATH=\$PATH:/usr/local/bin
+            docker stop deploy-dashboard 2>/dev/null || true
+            docker rm deploy-dashboard 2>/dev/null || true
+            docker run -d \
+              --name deploy-dashboard \
+              --network webphoto_backend \
+              --restart unless-stopped \
+              --env-file ${APP_DIR}/.env \
+              -p 127.0.0.1:7000:7000 \
+              ${IMAGE_NAME}:latest
+            sleep 5
+            docker ps | grep deploy-dashboard || echo 'WARNING: container not running'
+          "
+
+      - name: Upload nginx conf + reload
+        run: |
+          VPS="${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
+          PORT="${{ secrets.VPS_PORT }}"
+          sshpass -e scp -P $PORT infra/nginx/conf.d/deploy-dashboard.bhquan.store.conf \
+            $VPS:/opt/infra/nginx/conf.d/deploy-dashboard.bhquan.store.conf
+          sshpass -e ssh -p $PORT $VPS "
+            export PATH=\$PATH:/usr/local/bin
+            docker exec shared-nginx nginx -t 2>&1 && docker exec shared-nginx nginx -s reload && echo 'nginx reloaded'
+          "
