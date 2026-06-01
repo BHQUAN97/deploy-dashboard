@@ -43,7 +43,7 @@ jobs:
           NODE_ENV=production
           PORT=7000
           EOF
-          printf 'GITHUB_TOKEN=%s\n' "${{ secrets.GITHUB_TOKEN }}" >> /tmp/dashboard.env
+          printf 'GITHUB_TOKEN=%s\n' "${{ secrets.GH_TOKEN }}" >> /tmp/dashboard.env
           printf 'VPS_PASSWORD=%s\n' "${{ secrets.VPS_PASSWORD }}" >> /tmp/dashboard.env
           printf 'CERTBOT_EMAIL=%s\n' "${{ secrets.CERTBOT_EMAIL }}" >> /tmp/dashboard.env
           printf 'DASHBOARD_USER=%s\n' "${{ secrets.DASHBOARD_USER }}" >> /tmp/dashboard.env
