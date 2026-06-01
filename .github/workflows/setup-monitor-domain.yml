@@ -5,7 +5,7 @@ on:
 
 jobs:
   setup:
-    name: DNS → Certbot → HTTPS
+    name: DNS to Certbot to HTTPS
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -18,58 +18,48 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
           echo "SSHPASS=${{ secrets.VPS_PASSWORD }}" >> $GITHUB_ENV
-          VPS="${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
-          PORT="${{ secrets.VPS_PORT }}"
-          echo "VPS=$VPS" >> $GITHUB_ENV
-          echo "PORT=$PORT" >> $GITHUB_ENV
+          echo "VPS=${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" >> $GITHUB_ENV
+          echo "PORT=${{ secrets.VPS_PORT }}" >> $GITHUB_ENV
 
       - name: Upload HTTP conf + cleanup old domain
         run: |
-          # Upload HTTP-only conf (SSL sẽ được thêm sau khi có cert)
-          cat > /tmp/monitor.bhquan.store.conf << 'NGINX_EOF'
+          sshpass -e ssh -p $PORT $VPS "
+            set -e
+            CONF_DIR=/opt/infra/nginx/conf.d
+
+            # Xoa conf cu neu co
+            rm -f \$CONF_DIR/deploy-dashboard.bhquan.store.conf
+            echo 'Removed old deploy-dashboard conf (if existed)'
+
+            # Ghi HTTP-only conf cho monitor.bhquan.store
+            cat > \$CONF_DIR/monitor.bhquan.store.conf << ENDOFCONF
 server {
     listen 80;
     server_name monitor.bhquan.store;
-
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-
-    location / {
-        return 301 https://monitor.bhquan.store$request_uri;
-    }
+    location /.well-known/acme-challenge/ { root /var/www/certbot; }
+    location / { return 301 https://monitor.bhquan.store\\\$request_uri; }
 }
-NGINX_EOF
-
-          sshpass -e scp -P ${{ secrets.VPS_PORT }} /tmp/monitor.bhquan.store.conf \
-            $VPS:/opt/infra/nginx/conf.d/monitor.bhquan.store.conf
-
-          sshpass -e ssh -p $PORT $VPS "
-            # Xóa conf cũ nếu có
-            rm -f /opt/infra/nginx/conf.d/deploy-dashboard.bhquan.store.conf
-            echo 'Removed old deploy-dashboard conf (if existed)'
+ENDOFCONF
 
             # Test + reload nginx
             docker exec shared-nginx nginx -t 2>&1 && \
             docker exec shared-nginx nginx -s reload && \
-            echo 'nginx reloaded with HTTP-only conf for monitor.bhquan.store'
+            echo 'nginx reloaded with HTTP conf for monitor.bhquan.store'
           "
 
       - name: Wait for DNS propagation (max 30 min)
         run: |
           VPS_IP="${{ secrets.VPS_HOST }}"
-          echo "Waiting for monitor.bhquan.store → $VPS_IP ..."
+          echo "Waiting for monitor.bhquan.store -> $VPS_IP ..."
           for i in $(seq 1 30); do
             RESOLVED=$(dig +short monitor.bhquan.store @8.8.8.8 2>/dev/null | head -1)
             echo "Attempt $i/30: resolved='$RESOLVED' (want '$VPS_IP')"
             if [ "$RESOLVED" = "$VPS_IP" ]; then
-              echo "DNS OK — monitor.bhquan.store → $VPS_IP"
+              echo "DNS OK"
               break
             fi
             if [ $i -eq 30 ]; then
-              echo "::error::DNS did not propagate after 30 minutes."
-              echo "Please set: monitor.bhquan.store A $VPS_IP"
-              echo "Then re-run this workflow."
+              echo "::error::DNS did not propagate after 30 minutes. Set: monitor.bhquan.store A $VPS_IP then re-run."
               exit 1
             fi
             sleep 60
@@ -79,24 +69,20 @@ NGINX_EOF
         run: |
           sshpass -e ssh -p $PORT $VPS "
             set -e
-            echo '=== Running certbot for monitor.bhquan.store ==='
             docker exec infra-certbot certbot certonly \
               --webroot -w /var/www/certbot \
               -d monitor.bhquan.store \
               --email buihongquan28041997@gmail.com \
-              --agree-tos --non-interactive \
-              --force-renewal
+              --agree-tos --non-interactive --force-renewal
             echo 'Certbot OK'
           "
 
       - name: Upload HTTPS conf + reload nginx
         run: |
-          sshpass -e scp -P ${{ secrets.VPS_PORT }} \
+          sshpass -e scp -P $PORT \
             infra/nginx/conf.d/monitor.bhquan.store.conf \
             $VPS:/opt/infra/nginx/conf.d/monitor.bhquan.store.conf
-
           sshpass -e ssh -p $PORT $VPS "
-            echo '=== Uploading HTTPS conf ==='
             docker exec shared-nginx nginx -t 2>&1 && \
             docker exec shared-nginx nginx -s reload && \
             echo 'nginx reloaded with HTTPS conf'
@@ -105,26 +91,22 @@ NGINX_EOF
       - name: Remove old cert (cleanup)
         run: |
           sshpass -e ssh -p $PORT $VPS "
-            if [ -d /etc/letsencrypt/live/deploy-dashboard.bhquan.store ]; then
-              docker exec infra-certbot rm -rf \
-                /etc/letsencrypt/live/deploy-dashboard.bhquan.store \
-                /etc/letsencrypt/archive/deploy-dashboard.bhquan.store \
-                /etc/letsencrypt/renewal/deploy-dashboard.bhquan.store.conf 2>/dev/null || true
-              echo 'Old cert removed'
-            else
-              echo 'No old cert to remove'
-            fi
+            docker exec infra-certbot rm -rf \
+              /etc/letsencrypt/live/deploy-dashboard.bhquan.store \
+              /etc/letsencrypt/archive/deploy-dashboard.bhquan.store \
+              /etc/letsencrypt/renewal/deploy-dashboard.bhquan.store.conf 2>/dev/null || true
+            echo 'Old cert cleanup done'
           "
 
       - name: Verify HTTPS
         run: |
           sleep 5
-          HTTP_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" https://monitor.bhquan.store/api/showcase 2>/dev/null || echo "000")
-          echo "HTTPS status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "401" ]; then
-            echo "monitor.bhquan.store is UP and serving HTTPS"
+          STATUS=$(curl -sk -o /dev/null -w "%{http_code}" https://monitor.bhquan.store/ 2>/dev/null || echo "000")
+          echo "HTTPS status: $STATUS"
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "401" ] || [ "$STATUS" = "302" ]; then
+            echo "monitor.bhquan.store is UP"
           else
-            echo "::warning::Got HTTP $HTTP_STATUS — app may still be starting"
+            echo "::warning::Got HTTP $STATUS - app may still be starting"
           fi
 
       - name: Summary
