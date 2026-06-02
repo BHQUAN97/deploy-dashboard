@@ -1,0 +1,29 @@
+name: VPS Diagnostics
+on:
+  repository_dispatch:
+    types: [vps-diag]
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass > /dev/null
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "SSHPASS=${{ secrets.VPS_PASSWORD }}" >> $GITHUB_ENV
+      - name: Check VPS state
+        run: |
+          sshpass -e ssh -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
+            echo '=== All containers ==='
+            docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'deploy-dashboard|NAME'
+            echo ''
+            echo '=== deploy-dashboard logs (last 20) ==='
+            docker logs deploy-dashboard --tail 20 2>&1 || echo 'Container not found!'
+            echo ''
+            echo '=== webphoto_backend network members ==='
+            docker network inspect webphoto_backend --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null
+            echo ''
+            echo '=== Port 7000 ==='
+            ss -tlnp | grep 7000 || echo 'Nothing on 7000'
+          "
