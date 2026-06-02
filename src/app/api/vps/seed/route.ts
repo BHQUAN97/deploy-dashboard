@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Chỉ chạy script đã được whitelist — không nhận command tự do
-  const cmd = `docker exec ${container} node dist/scripts/${scriptId}.js 2>&1`
+  const innerCmd = validScript.command ?? `node dist/scripts/${scriptId}.js`
+  const cmd = `docker exec ${container} ${innerCmd} 2>&1`
   return new Response(createSshStream(cmd, 120000), { headers: SSE_HEADERS })
 }

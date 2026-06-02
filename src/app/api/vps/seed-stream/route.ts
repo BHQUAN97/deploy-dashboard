@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
   const container = project.containerForSeed
   if (!container) return new Response('No seed container configured', { status: 400 })
 
-  const cmd = `docker exec ${container} node dist/scripts/${scriptId}.js 2>&1`
+  const innerCmd = validScript.command ?? `node dist/scripts/${scriptId}.js`
+  const cmd = `docker exec ${container} ${innerCmd} 2>&1`
   return new Response(createSshStream(cmd, 120000), { headers: SSE_HEADERS })
 }

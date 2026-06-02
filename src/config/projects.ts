@@ -1,6 +1,8 @@
 export interface SeedScript {
   id: string
   label: string
+  /** Command chạy bên trong container. Default: `node dist/scripts/${id}.js` */
+  command?: string
 }
 
 export interface DemoCredentials {
@@ -109,7 +111,19 @@ export const PROJECTS: ProjectConfig[] = [
     backupDatabase: 'lequydon',
     logContainers: ['lqd-api', 'lqd-frontend'],
     logFile: '/app/logs/error.log',
-    seedScripts: [],
+    containerForSeed: 'lqd-api',
+    seedScripts: [
+      { id: 'admin-seed',                  label: 'Admin user',                                       command: 'node dist/database/seeds/admin-seed.js' },
+      { id: 'content-seed',                label: 'Trang + nội dung cơ bản',                          command: 'node dist/database/seeds/content-seed.js' },
+      { id: 'seed-categories-articles',    label: 'Danh mục + bài viết',                              command: 'node dist/database/seeds/seed-categories-articles.js' },
+      { id: 'seed-admissions',             label: 'Tuyển sinh',                                       command: 'node dist/database/seeds/seed-admissions.js' },
+      { id: 'seed-events',                 label: 'Sự kiện',                                          command: 'node dist/database/seeds/seed-events.js' },
+      { id: 'seed-contacts-settings-nav',  label: 'Liên hệ + cài đặt + nav',                         command: 'node dist/database/seeds/seed-contacts-settings-nav.js' },
+      { id: 'seed-media',                  label: 'Media',                                            command: 'node dist/database/seeds/seed-media.js' },
+      { id: 'seed-pages-part1',            label: 'Trang tĩnh (part 1/3)',                            command: 'node dist/database/seeds/seed-pages-part1.js' },
+      { id: 'seed-pages-part2',            label: 'Trang tĩnh (part 2/3)',                            command: 'node dist/database/seeds/seed-pages-part2.js' },
+      { id: 'seed-pages-part3',            label: 'Trang tĩnh (part 3/3)',                            command: 'node dist/database/seeds/seed-pages-part3.js' },
+    ],
     demoCredentials: {
       adminUrl: 'https://lqd.bhquan.store/admin',
       username: 'admin@lequydon.local',
@@ -183,7 +197,10 @@ export const PROJECTS: ProjectConfig[] = [
     backupDatabase: 'photo_storage',
     logContainers: ['photo-api', 'photo-worker'],
     logFile: '/app/logs/error.log',
-    seedScripts: [],
+    containerForSeed: 'photo-api',
+    seedScripts: [
+      { id: 'seed', label: 'Plans + system settings + admin user', command: 'node dist/database/seed.js' },
+    ],
     demoCredentials: {
       adminUrl: 'https://photo.bhquan.store',
       username: 'admin@photostorage.com',
