@@ -1,32 +1,51 @@
 name: VPS Diagnostics
 on:
   repository_dispatch:
-    types: [vps-diag]
+    types: [vps-diag, fix-nginx-https]
 jobs:
   diag:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Setup SSH
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq sshpass > /dev/null
           mkdir -p ~/.ssh
           ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
           echo "SSHPASS=${{ secrets.VPS_PASSWORD }}" >> $GITHUB_ENV
-      - name: Check VPS state
+          echo "VPS=${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" >> $GITHUB_ENV
+          echo "PORT=${{ secrets.VPS_PORT }}" >> $GITHUB_ENV
+
+      - name: Fix HTTPS conf for monitor.bhquan.store
+        if: ${{ github.event.action == 'fix-nginx-https' }}
         run: |
-          sshpass -e ssh -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
-            echo '=== All nginx confs ==='
+          # Check cert inside container
+          CERT_OK=$(sshpass -e ssh -p $PORT $VPS "docker exec infra-certbot [ -f /etc/letsencrypt/live/monitor.bhquan.store/fullchain.pem ] && echo yes || echo no" 2>/dev/null || echo no)
+          echo "Cert in container: $CERT_OK"
+          if [ "$CERT_OK" = "yes" ]; then
+            sshpass -e scp -P $PORT infra/nginx/conf.d/monitor.bhquan.store.conf \
+              $VPS:/opt/infra/nginx/conf.d/monitor.bhquan.store.conf
+            sshpass -e ssh -p $PORT $VPS "
+              docker exec shared-nginx nginx -t 2>&1 && \
+              docker exec shared-nginx nginx -s reload && \
+              echo 'HTTPS conf uploaded and nginx reloaded'
+            "
+          else
+            echo "::error::Cert not found in infra-certbot container"
+          fi
+
+      - name: Diagnostics
+        run: |
+          sshpass -e ssh -p $PORT $VPS "
+            echo '=== nginx confs ==='
             ls /opt/infra/nginx/conf.d/
             echo ''
             echo '=== monitor.bhquan.store.conf ==='
             cat /opt/infra/nginx/conf.d/monitor.bhquan.store.conf 2>/dev/null || echo 'FILE NOT FOUND'
             echo ''
-            echo '=== deploy-dashboard container ==='
-            docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Networks}}' | grep -E 'deploy|NAME' || echo 'not found'
+            echo '=== Cert in container ==='
+            docker exec infra-certbot ls /etc/letsencrypt/live/ 2>/dev/null || echo 'certbot container issue'
             echo ''
             echo '=== nginx test ==='
-            docker exec shared-nginx nginx -t 2>&1 | tail -5
-            echo ''
-            echo '=== Test local request to deploy-dashboard ==='
-            curl -sk http://deploy-dashboard:7000/api/domains/health 2>/dev/null | head -c 200 || echo 'Cannot reach deploy-dashboard:7000'
+            docker exec shared-nginx nginx -t 2>&1 | tail -3
           "

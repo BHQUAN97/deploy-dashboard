@@ -93,8 +93,8 @@ jobs:
           PORT="${{ secrets.VPS_PORT }}"
           CERT_PATH="/etc/letsencrypt/live/monitor.bhquan.store/fullchain.pem"
 
-          # Kiem tra cert da ton tai chua
-          CERT_EXISTS=$(sshpass -e ssh -p $PORT $VPS "[ -f $CERT_PATH ] && echo yes || echo no")
+          # Kiem tra cert da ton tai chua — phai check TRONG infra-certbot container (cert o Docker volume)
+          CERT_EXISTS=$(sshpass -e ssh -p $PORT $VPS "docker exec infra-certbot [ -f $CERT_PATH ] && echo yes || echo no" 2>/dev/null || echo no)
           echo "Cert exists: $CERT_EXISTS"
 
           if [ "$CERT_EXISTS" = "yes" ]; then
