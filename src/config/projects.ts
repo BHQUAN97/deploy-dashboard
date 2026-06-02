@@ -1,8 +1,10 @@
 export interface SeedScript {
   id: string
   label: string
-  /** Command chạy bên trong container. Default: `node dist/scripts/${id}.js` */
+  /** Command chạy bên trong container (wrapped bởi docker exec). Default: `node dist/scripts/${id}.js` */
   command?: string
+  /** Command chạy thẳng trên VPS host qua SSH — dùng khi seed không qua container backend (ví dụ: SQL pipe vào shared-mysql) */
+  hostCommand?: string
 }
 
 export interface DemoCredentials {
@@ -86,7 +88,18 @@ export const PROJECTS: ProjectConfig[] = [
     backupDatabase: 'fashionecom',
     logContainers: ['fashionecom-api', 'fashionecom-frontend'],
     logFile: '/app/logs/error.log',
-    seedScripts: [],
+    seedScripts: [
+      {
+        id: 'seed-dev-data',
+        label: 'Dev data (admin + categories + products)',
+        hostCommand: [
+          `DB_PASS=$(grep '^DB_PASSWORD=' /opt/fashionecom/.env | cut -d= -f2-)`,
+          `DB_USER=$(grep '^DB_USERNAME=' /opt/fashionecom/.env | cut -d= -f2-)`,
+          `DB_NAME=$(grep '^DB_NAME=' /opt/fashionecom/.env | cut -d= -f2-)`,
+          `cat /opt/fashionecom/db/seed/seed_dev_data.sql | docker exec -i shared-mysql mysql -u "$DB_USER" -p"$DB_PASS" "$DB_NAME"`,
+        ].join(' && '),
+      },
+    ],
     demoCredentials: {
       adminUrl: 'https://shop.bhquan.store/admin',
       username: 'admin@fashionecom.local',

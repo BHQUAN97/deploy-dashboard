@@ -18,13 +18,20 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: 'Script not allowed' }), { status: 400 })
   }
 
-  const container = project.containerForSeed
-  if (!container) {
-    return new Response(JSON.stringify({ error: 'No seed container configured' }), { status: 400 })
+  let cmd: string
+
+  if (validScript.hostCommand) {
+    // Chạy thẳng trên VPS host (ví dụ: SQL pipe vào shared-mysql)
+    cmd = `${validScript.hostCommand} 2>&1`
+  } else {
+    const container = project.containerForSeed
+    if (!container) {
+      return new Response(JSON.stringify({ error: 'No seed container configured' }), { status: 400 })
+    }
+    // Chỉ chạy script đã được whitelist — không nhận command tự do
+    const innerCmd = validScript.command ?? `node dist/scripts/${scriptId}.js`
+    cmd = `docker exec ${container} ${innerCmd} 2>&1`
   }
 
-  // Chỉ chạy script đã được whitelist — không nhận command tự do
-  const innerCmd = validScript.command ?? `node dist/scripts/${scriptId}.js`
-  const cmd = `docker exec ${container} ${innerCmd} 2>&1`
   return new Response(createSshStream(cmd, 120000), { headers: SSE_HEADERS })
 }
