@@ -185,7 +185,11 @@ export const PROJECTS: ProjectConfig[] = [
     backupDatabase: 'webtemplate',
     logContainers: ['wt-backend', 'wt-frontend'],
     logFile: '/app/logs/error.log',
-    seedScripts: [],
+    containerForSeed: 'wt-backend',
+    seedScripts: [
+      { id: 'admin-seed',   label: 'Admin user (admin@webtemplate.com)', command: 'node dist/database/seeds/admin-seed.js' },
+      { id: 'chat-runner',  label: 'Chat scenarios + schedules',         command: 'node dist/database/seeds/chat-runner.js' },
+    ],
     demoCredentials: {
       adminUrl: 'https://template.bhquan.store/admin',
       username: 'admin@template.local',
