@@ -15,15 +15,18 @@ jobs:
       - name: Check VPS state
         run: |
           sshpass -e ssh -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
-            echo '=== All containers ==='
-            docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'deploy-dashboard|NAME'
+            echo '=== All nginx confs ==='
+            ls /opt/infra/nginx/conf.d/
             echo ''
-            echo '=== deploy-dashboard logs (last 20) ==='
-            docker logs deploy-dashboard --tail 20 2>&1 || echo 'Container not found!'
+            echo '=== monitor.bhquan.store.conf ==='
+            cat /opt/infra/nginx/conf.d/monitor.bhquan.store.conf 2>/dev/null || echo 'FILE NOT FOUND'
             echo ''
-            echo '=== webphoto_backend network members ==='
-            docker network inspect webphoto_backend --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null
+            echo '=== deploy-dashboard container ==='
+            docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Networks}}' | grep -E 'deploy|NAME' || echo 'not found'
             echo ''
-            echo '=== Port 7000 ==='
-            ss -tlnp | grep 7000 || echo 'Nothing on 7000'
+            echo '=== nginx test ==='
+            docker exec shared-nginx nginx -t 2>&1 | tail -5
+            echo ''
+            echo '=== Test local request to deploy-dashboard ==='
+            curl -sk http://deploy-dashboard:7000/api/domains/health 2>/dev/null | head -c 200 || echo 'Cannot reach deploy-dashboard:7000'
           "
