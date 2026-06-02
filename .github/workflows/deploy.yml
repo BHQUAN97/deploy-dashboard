@@ -91,8 +91,24 @@ jobs:
         run: |
           VPS="${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
           PORT="${{ secrets.VPS_PORT }}"
-          sshpass -e scp -P $PORT infra/nginx/conf.d/monitor.bhquan.store.conf \
-            $VPS:/opt/infra/nginx/conf.d/monitor.bhquan.store.conf
+          CERT_PATH="/etc/letsencrypt/live/monitor.bhquan.store/fullchain.pem"
+
+          # Kiem tra cert da ton tai chua
+          CERT_EXISTS=$(sshpass -e ssh -p $PORT $VPS "[ -f $CERT_PATH ] && echo yes || echo no")
+          echo "Cert exists: $CERT_EXISTS"
+
+          if [ "$CERT_EXISTS" = "yes" ]; then
+            # Cert co roi -> upload HTTPS conf binh thuong
+            sshpass -e scp -P $PORT infra/nginx/conf.d/monitor.bhquan.store.conf \
+              $VPS:/opt/infra/nginx/conf.d/monitor.bhquan.store.conf
+          else
+            # Cert chua co -> upload HTTP-only conf (tranh nginx fail)
+            sshpass -e ssh -p $PORT $VPS "
+              printf 'server {\n    listen 80;\n    server_name monitor.bhquan.store;\n    location /.well-known/acme-challenge/ { root /var/www/certbot; }\n    location / { return 301 https://monitor.bhquan.store\$request_uri; }\n}\n' \
+                > /opt/infra/nginx/conf.d/monitor.bhquan.store.conf
+            "
+          fi
+
           sshpass -e ssh -p $PORT $VPS "
             export PATH=\$PATH:/usr/local/bin
             docker exec shared-nginx nginx -t 2>&1 && docker exec shared-nginx nginx -s reload && echo 'nginx reloaded'
@@ -106,13 +122,9 @@ jobs:
           PORT="${{ secrets.VPS_PORT }}"
           VPS_IP="${{ secrets.VPS_HOST }}"
 
-          # Ghi HTTP-only conf truoc de certbot webroot hoat dong
+          # Xoa conf cu neu con ton tai
           sshpass -e ssh -p $PORT $VPS "
             rm -f /opt/infra/nginx/conf.d/deploy-dashboard.bhquan.store.conf
-            printf 'server {\n    listen 80;\n    server_name monitor.bhquan.store;\n    location /.well-known/acme-challenge/ { root /var/www/certbot; }\n    location / { return 301 https://monitor.bhquan.store\$request_uri; }\n}\n' \
-              > /opt/infra/nginx/conf.d/monitor.bhquan.store.conf
-            docker exec shared-nginx nginx -t 2>&1 && docker exec shared-nginx nginx -s reload
-            echo 'HTTP conf uploaded'
           "
 
           # Poll DNS (max 30 min)
