@@ -7,7 +7,9 @@ import { StatusBadge } from './StatusBadge'
 import { SslBadge } from './SslBadge'
 import { DeployButton } from './DeployButton'
 import { BackupButton } from './BackupButton'
-import { ExternalLink, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { RestartButton } from './RestartButton'
+import { ExternalLink, Clock, CheckCircle2, XCircle, HardDrive } from 'lucide-react'
+import type { RunInfo as BackupRun } from '@/lib/github'
 
 interface Props {
   project: ProjectConfig
@@ -18,9 +20,10 @@ interface Props {
   onDeployStart: (runId: number | null) => void
   isBackingUp?: boolean
   onBackupStart?: (runId: number | null) => void
+  latestBackup?: BackupRun | null
 }
 
-export function ProjectCard({ project, health, loadingHealth, latestRun, isDeploying, onDeployStart, isBackingUp = false, onBackupStart }: Props) {
+export function ProjectCard({ project, health, loadingHealth, latestRun, isDeploying, onDeployStart, isBackingUp = false, onBackupStart, latestBackup }: Props) {
   const isError = health && (!health.reachable || (health.httpStatus ?? 0) >= 400)
   const isOk = health?.reachable && health.httpStatus && health.httpStatus < 400
   const border = isDeploying
@@ -68,6 +71,7 @@ export function ProjectCard({ project, health, loadingHealth, latestRun, isDeplo
           )}
         </div>
 
+        {/* Last deploy */}
         {latestRun && (
           <div className="flex items-center gap-1 text-[10px] text-zinc-600">
             <Clock className="w-3 h-3" />
@@ -76,7 +80,23 @@ export function ProjectCard({ project, health, loadingHealth, latestRun, isDeplo
               : latestRun.conclusion === 'failure'
               ? <XCircle className="w-3 h-3 text-red-600" />
               : null}
-            <span>{new Date(latestRun.updatedAt).toLocaleDateString('vi-VN')}</span>
+            <span>Deploy {new Date(latestRun.updatedAt).toLocaleDateString('vi-VN')}</span>
+            <a href={latestRun.url} target="_blank" rel="noopener noreferrer" className="ml-auto hover:text-zinc-400">
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+          </div>
+        )}
+
+        {/* Last backup */}
+        {latestBackup && (
+          <div className="flex items-center gap-1 text-[10px] text-zinc-600">
+            <HardDrive className="w-3 h-3" />
+            {latestBackup.conclusion === 'success'
+              ? <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              : latestBackup.conclusion === 'failure'
+              ? <XCircle className="w-3 h-3 text-red-600" />
+              : null}
+            <span>Backup {new Date(latestBackup.updatedAt).toLocaleDateString('vi-VN')}</span>
           </div>
         )}
 
@@ -84,6 +104,7 @@ export function ProjectCard({ project, health, loadingHealth, latestRun, isDeplo
         {project.backupWorkflow && onBackupStart && (
           <BackupButton project={project} isRunning={isBackingUp} onBackupStart={onBackupStart} />
         )}
+        <RestartButton project={project} />
       </CardContent>
     </Card>
   )

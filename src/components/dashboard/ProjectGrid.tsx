@@ -7,6 +7,7 @@ import type { RunInfo } from '@/lib/github'
 interface Props {
   healthMap: Map<string, DomainHealth>
   statusMap: Map<string, { latestRun: RunInfo | null; isDeploying: boolean }>
+  backupStatusMap: Map<string, RunInfo | null>
   loadingHealth: boolean
   deployingProject: string | null
   onDeployStart: (projectId: string, runId: number | null) => void
@@ -14,7 +15,7 @@ interface Props {
   onBackupStart?: (projectId: string, runId: number | null) => void
 }
 
-export function ProjectGrid({ healthMap, statusMap, loadingHealth, deployingProject, onDeployStart, backingUpProject, onBackupStart }: Props) {
+export function ProjectGrid({ healthMap, statusMap, backupStatusMap, loadingHealth, deployingProject, onDeployStart, backingUpProject, onBackupStart }: Props) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {PROJECTS.map(project => {
@@ -30,6 +31,7 @@ export function ProjectGrid({ healthMap, statusMap, loadingHealth, deployingProj
             onDeployStart={runId => onDeployStart(project.id, runId)}
             isBackingUp={backingUpProject === project.id}
             onBackupStart={onBackupStart ? (runId) => onBackupStart(project.id, runId) : undefined}
+            latestBackup={backupStatusMap.get(project.id) ?? null}
           />
         )
       })}

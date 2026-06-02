@@ -194,6 +194,36 @@ function mapJob(j: {
   }
 }
 
+// Lấy run mới nhất của một workflow cụ thể (vd: 'backup.yml')
+export async function getLatestRunForWorkflow(repo: string, workflowFile: string): Promise<RunInfo | null> {
+  try {
+    const { data } = await octokit.actions.listWorkflowRuns({
+      owner: OWNER,
+      repo,
+      workflow_id: workflowFile,
+      per_page: 1,
+    })
+    if (data.workflow_runs.length === 0) return null
+    return mapRun(data.workflow_runs[0])
+  } catch {
+    return null
+  }
+}
+
+// Lấy N run gần nhất của repo (bất kể workflow)
+export async function getRecentRuns(repo: string, limit = 5): Promise<RunInfo[]> {
+  try {
+    const { data } = await octokit.actions.listWorkflowRunsForRepo({
+      owner: OWNER,
+      repo,
+      per_page: limit,
+    })
+    return data.workflow_runs.map(mapRun)
+  } catch {
+    return []
+  }
+}
+
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
