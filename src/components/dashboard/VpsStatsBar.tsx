@@ -26,8 +26,8 @@ export function VpsStatsBar() {
   if (error) return null
   if (!stats) {
     return (
-      <div className="flex gap-4">
-        {[1,2,3].map(i => <div key={i} className="h-8 w-32 bg-zinc-800 animate-pulse rounded-lg" />)}
+      <div className="grid grid-cols-2 md:flex gap-2 md:gap-4">
+        {[1, 2, 3].map(i => <div key={i} className="h-12 bg-zinc-800 animate-pulse rounded-lg" />)}
       </div>
     )
   }
@@ -36,12 +36,12 @@ export function VpsStatsBar() {
   const memAlert = stats.memory.percent >= 80
 
   return (
-    <div className="flex flex-wrap gap-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg">
+    <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-3 p-3 bg-zinc-900 border border-zinc-800 rounded-lg">
       {/* Disk */}
       <div className="flex items-center gap-2">
         <HardDrive className={`w-3.5 h-3.5 shrink-0 ${diskAlert ? 'text-red-400' : 'text-zinc-500'}`} />
         <div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <span className={`text-xs font-medium ${diskAlert ? 'text-red-400' : 'text-zinc-300'}`}>
               Disk {stats.disk.percent}%
             </span>
@@ -54,13 +54,11 @@ export function VpsStatsBar() {
         </div>
       </div>
 
-      <div className="w-px bg-zinc-800 self-stretch" />
-
       {/* Memory */}
       <div className="flex items-center gap-2">
         <MemoryStick className={`w-3.5 h-3.5 shrink-0 ${memAlert ? 'text-red-400' : 'text-zinc-500'}`} />
         <div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <span className={`text-xs font-medium ${memAlert ? 'text-red-400' : 'text-zinc-300'}`}>
               RAM {stats.memory.percent}%
             </span>
@@ -73,14 +71,12 @@ export function VpsStatsBar() {
         </div>
       </div>
 
-      <div className="w-px bg-zinc-800 self-stretch" />
-
       {/* Containers */}
-      <div className="flex items-center gap-2">
+      <div className="col-span-2 md:col-span-1 flex items-center gap-2 md:border-l md:border-zinc-800 md:pl-3">
         <Container className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
         <div>
           <span className="text-xs font-medium text-zinc-300">{stats.containers.length} containers</span>
-          <p className="text-[10px] text-zinc-600 mt-0.5 max-w-[200px] truncate">
+          <p className="text-[10px] text-zinc-600 mt-0.5 truncate max-w-[200px] md:max-w-none">
             {stats.containers.slice(0, 4).join(', ')}{stats.containers.length > 4 ? ` +${stats.containers.length - 4}` : ''}
           </p>
         </div>

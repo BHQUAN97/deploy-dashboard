@@ -1,8 +1,9 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Wrench, Globe, ScrollText } from 'lucide-react'
+import { LayoutDashboard, Wrench, Globe, ScrollText, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { logout } from '@/lib/logout'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -13,8 +14,9 @@ const NAV = [
 
 export function Sidebar() {
   const pathname = usePathname()
+
   return (
-    <aside className="w-56 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0">
+    <aside className="hidden md:flex w-56 bg-zinc-900 border-r border-zinc-800 flex-col shrink-0">
       <div className="p-4 border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold text-white">🚀 DeployHub</span>
@@ -39,8 +41,15 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
-      <div className="p-3 border-t border-zinc-800">
+      <div className="p-3 border-t border-zinc-800 space-y-2">
         <p className="text-xs text-zinc-600">159.223.77.247</p>
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Đăng xuất
+        </button>
       </div>
     </aside>
   )

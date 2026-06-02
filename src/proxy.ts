@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const PUBLIC_PATHS = ['/showcase', '/api/showcase']
+const PUBLIC_PATHS = ['/showcase', '/api/showcase', '/login', '/api/auth/login']
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -13,24 +13,47 @@ export function proxy(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const authHeader = req.headers.get('authorization')
-  if (authHeader) {
-    const base64 = authHeader.replace('Basic ', '')
-    const decoded = Buffer.from(base64, 'base64').toString('utf-8')
-    const colonIdx = decoded.indexOf(':')
-    const user = decoded.slice(0, colonIdx)
-    const pass = decoded.slice(colonIdx + 1)
+  const isApiRoute = pathname.startsWith('/api/')
+
+  function validateCredentials(user: string, pass: string) {
     const expectedUser = process.env.DASHBOARD_USER ?? 'admin'
     const expectedPass = process.env.DASHBOARD_PASS ?? 'changeme'
-    if (user === expectedUser && pass === expectedPass) {
-      return NextResponse.next()
-    }
+    return user === expectedUser && pass === expectedPass
   }
 
-  return new NextResponse('Unauthorized', {
-    status: 401,
-    headers: { 'WWW-Authenticate': 'Basic realm="Deploy Dashboard"' },
-  })
+  // Cookie auth (từ login page)
+  const cookieAuth = req.cookies.get('dash_auth')?.value
+  if (cookieAuth) {
+    try {
+      const decoded = Buffer.from(cookieAuth, 'base64').toString('utf-8')
+      const colonIdx = decoded.indexOf(':')
+      if (colonIdx > 0 && validateCredentials(decoded.slice(0, colonIdx), decoded.slice(colonIdx + 1))) {
+        return NextResponse.next()
+      }
+    } catch {}
+  }
+
+  // Authorization header (backwards compat)
+  const authHeader = req.headers.get('authorization')
+  if (authHeader?.startsWith('Basic ')) {
+    try {
+      const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf-8')
+      const colonIdx = decoded.indexOf(':')
+      if (colonIdx > 0 && validateCredentials(decoded.slice(0, colonIdx), decoded.slice(colonIdx + 1))) {
+        return NextResponse.next()
+      }
+    } catch {}
+  }
+
+  // API routes → 401 JSON (client handles redirect)
+  if (isApiRoute) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Page routes → redirect to login
+  const loginUrl = new URL('/login', req.url)
+  loginUrl.searchParams.set('from', pathname)
+  return NextResponse.redirect(loginUrl)
 }
 
 export const config = {
