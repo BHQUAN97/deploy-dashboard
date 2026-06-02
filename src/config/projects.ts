@@ -26,6 +26,8 @@ export interface ProjectConfig {
   deployWorkflow: string
   backupWorkflow?: string     // 'backup.yml' nếu có
   backupDatabase?: string     // tên DB cần backup
+  logContainers: string[]     // containers để xem logs
+  logFile?: string            // đường dẫn log file trong container
   seedScripts: SeedScript[]
   containerForSeed?: string
   demoCredentials?: DemoCredentials
@@ -54,6 +56,8 @@ export const PROJECTS: ProjectConfig[] = [
     ],
     backupWorkflow: 'backup.yml',
     backupDatabase: 'vietnet',
+    logContainers: ['vietnet-api', 'vietnet-frontend'],
+    logFile: '/app/logs/error.log',
     containerForSeed: 'vietnet-api',
     demoCredentials: {
       adminUrl: 'https://bhquan.store/admin',
@@ -78,6 +82,8 @@ export const PROJECTS: ProjectConfig[] = [
     deployWorkflow: 'deploy.yml',
     backupWorkflow: 'backup.yml',
     backupDatabase: 'fashionecom',
+    logContainers: ['fashionecom-api', 'fashionecom-frontend'],
+    logFile: '/app/logs/error.log',
     seedScripts: [],
     demoCredentials: {
       adminUrl: 'https://shop.bhquan.store/admin',
@@ -101,6 +107,8 @@ export const PROJECTS: ProjectConfig[] = [
     deployWorkflow: 'deploy.yml',
     backupWorkflow: 'backup.yml',
     backupDatabase: 'lequydon',
+    logContainers: ['lqd-api', 'lqd-frontend'],
+    logFile: '/app/logs/error.log',
     seedScripts: [],
     demoCredentials: {
       adminUrl: 'https://lqd.bhquan.store/admin',
@@ -122,6 +130,8 @@ export const PROJECTS: ProjectConfig[] = [
     icon: '📊',
     containers: ['tracker-api', 'tracker-dashboard', 'tracker-plausible'],
     deployWorkflow: 'deploy.yml',
+    logContainers: ['tracker-api', 'tracker-dashboard'],
+    logFile: '/app/logs/error.log',
     seedScripts: [],
     demoCredentials: {
       adminUrl: 'https://photostorage.cloud',
@@ -146,6 +156,8 @@ export const PROJECTS: ProjectConfig[] = [
     deployWorkflow: 'deploy.yml',
     backupWorkflow: 'backup.yml',
     backupDatabase: 'webtemplate',
+    logContainers: ['wt-backend', 'wt-frontend'],
+    logFile: '/app/logs/error.log',
     seedScripts: [],
     demoCredentials: {
       adminUrl: 'https://template.bhquan.store/admin',
@@ -169,6 +181,8 @@ export const PROJECTS: ProjectConfig[] = [
     deployWorkflow: 'deploy.yml',
     backupWorkflow: 'backup.yml',
     backupDatabase: 'photo_storage',
+    logContainers: ['photo-api', 'photo-worker'],
+    logFile: '/app/logs/error.log',
     seedScripts: [],
     demoCredentials: {
       adminUrl: 'https://photo.bhquan.store',
