@@ -224,6 +224,21 @@ export async function getRecentRuns(repo: string, limit = 5): Promise<RunInfo[]>
   }
 }
 
+// Lấy N run gần nhất của một workflow cụ thể
+export async function getRecentRunsForWorkflow(repo: string, workflowFile: string, limit = 5): Promise<RunInfo[]> {
+  try {
+    const { data } = await octokit.actions.listWorkflowRuns({
+      owner: OWNER,
+      repo,
+      workflow_id: workflowFile,
+      per_page: limit,
+    })
+    return data.workflow_runs.map(mapRun)
+  } catch {
+    return []
+  }
+}
+
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
