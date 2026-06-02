@@ -1,6 +1,5 @@
 import https from 'https'
-import http from 'http'
-import { TLSSocket } from 'tls'
+import tls from 'tls'
 
 export interface SslInfo {
   valid: boolean
@@ -40,39 +39,42 @@ export function invalidateCache(domain?: string) {
   else healthCache.clear()
 }
 
-// Lấy SSL cert info qua TLS handshake
+// Lấy SSL cert info qua tls.connect() — reliable hơn https.get vì không bị ảnh hưởng bởi redirects
 function getSslInfo(domain: string): Promise<SslInfo | null> {
   return new Promise(resolve => {
-    const req = https.get(
-      { hostname: domain, port: 443, path: '/', method: 'HEAD', rejectUnauthorized: false },
-      res => {
-        const socket = res.socket as TLSSocket
-        if (!socket?.getPeerCertificate) {
-          resolve(null)
-          return
+    let resolved = false
+    const done = (val: SslInfo | null) => {
+      if (!resolved) { resolved = true; resolve(val) }
+    }
+
+    const socket = tls.connect(
+      { host: domain, port: 443, servername: domain, rejectUnauthorized: false },
+      () => {
+        try {
+          const cert = socket.getPeerCertificate(false)
+          socket.destroy()
+          if (!cert?.valid_to) return done(null)
+
+          const expiresAt = new Date(cert.valid_to)
+          const daysRemaining = Math.floor((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          const issuerRaw = cert.issuer?.O
+          const issuerOrg = Array.isArray(issuerRaw) ? issuerRaw[0] : (issuerRaw ?? 'Unknown')
+
+          done({
+            valid: daysRemaining > 0,
+            issuer: issuerOrg,
+            daysRemaining,
+            expiresAt: expiresAt.toISOString(),
+            isLetsEncrypt: issuerOrg.includes("Let's Encrypt"),
+          })
+        } catch {
+          done(null)
         }
-        const cert = socket.getPeerCertificate()
-        if (!cert || !cert.valid_to) {
-          resolve(null)
-          return
-        }
-        const expiresAt = new Date(cert.valid_to)
-        const now = new Date()
-        const daysRemaining = Math.floor((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-        const issuerRaw = cert.issuer?.O
-        const issuerOrg = Array.isArray(issuerRaw) ? issuerRaw[0] : (issuerRaw ?? 'Unknown')
-        resolve({
-          valid: daysRemaining > 0,
-          issuer: issuerOrg,
-          daysRemaining,
-          expiresAt: expiresAt.toISOString(),
-          isLetsEncrypt: issuerOrg.includes("Let's Encrypt"),
-        })
-        res.destroy()
       }
     )
-    req.on('error', () => resolve(null))
-    req.setTimeout(8000, () => { req.destroy(); resolve(null) })
+
+    socket.on('error', () => done(null))
+    socket.setTimeout(8000, () => { socket.destroy(); done(null) })
   })
 }
 
