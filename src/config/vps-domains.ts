@@ -35,6 +35,12 @@ export const VPS_DOMAINS: CertDomain[] = [
     sans: ['template.bhquan.store'],
     projectId: 'webtemplate',
   },
+  // Web Portfolio Templates
+  {
+    domain: 'ld.bhquan.store',
+    sans: ['ld.bhquan.store', 'spa.bhquan.store', 'yte.bhquan.store', 'bds.bhquan.store', 'ks.bhquan.store'],
+    projectId: 'landing-template',
+  },
 ]
 
 // Certbot shared container name trên VPS
