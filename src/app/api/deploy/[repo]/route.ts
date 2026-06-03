@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getActiveRun, getLatestRun, triggerWorkflow, findNewRun } from '@/lib/github'
+import { getLatestRun, triggerWorkflow, findNewRun } from '@/lib/github'
 import { getProjectByRepo } from '@/config/projects'
 
 export const dynamic = 'force-dynamic'

@@ -1,23 +1,15 @@
 import { ShowcaseGrid } from '@/components/showcase/ShowcaseGrid'
-import { PROJECTS } from '@/config/projects'
+import { getShowcaseProjects } from '@/lib/showcase-content'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: 'Project Showcase',
   description: 'Danh sách các dự án web đang vận hành trên VPS',
 }
 
-export default function ShowcasePage() {
-  const projects = PROJECTS.map(p => ({
-    id: p.id,
-    name: p.name,
-    domain: p.domain,
-    stack: p.stack,
-    description: p.description,
-    longDescription: p.longDescription,
-    color: p.color,
-    icon: p.icon,
-    demoCredentials: p.demoCredentials,
-  }))
+export default async function ShowcasePage() {
+  const projects = await getShowcaseProjects()
 
   return (
     <div className="min-h-screen bg-zinc-50">

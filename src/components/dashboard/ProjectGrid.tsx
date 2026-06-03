@@ -13,12 +13,14 @@ interface Props {
   onDeployStart: (projectId: string, runId: number | null) => void
   backingUpProject?: string | null
   onBackupStart?: (projectId: string, runId: number | null) => void
+  projects: typeof PROJECTS
+  onShowcaseSaved?: (project: (typeof PROJECTS)[number]) => void
 }
 
-export function ProjectGrid({ healthMap, statusMap, backupStatusMap, loadingHealth, deployingProject, onDeployStart, backingUpProject, onBackupStart }: Props) {
+export function ProjectGrid({ projects, healthMap, statusMap, backupStatusMap, loadingHealth, deployingProject, onDeployStart, backingUpProject, onBackupStart, onShowcaseSaved }: Props) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {PROJECTS.map(project => {
+      {projects.map(project => {
         const status = statusMap.get(project.id)
         return (
           <ProjectCard
@@ -32,6 +34,7 @@ export function ProjectGrid({ healthMap, statusMap, backupStatusMap, loadingHeal
             isBackingUp={backingUpProject === project.id}
             onBackupStart={onBackupStart ? (runId) => onBackupStart(project.id, runId) : undefined}
             latestBackup={backupStatusMap.get(project.id) ?? null}
+            onShowcaseSaved={onShowcaseSaved}
           />
         )
       })}

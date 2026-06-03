@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
   const [activeRunId, setActiveRunId] = useState<number | null>(null)
   const [backingUpProject, setBackingUpProject] = useState<string | null>(null)
+  const [projects, setProjects] = useState(PROJECTS)
   const lastHealthFetch = useRef(0)
 
   const loadHealth = useCallback(async () => {
@@ -47,6 +48,17 @@ export default function DashboardPage() {
     } catch {}
   }, [])
 
+  const loadShowcaseContent = useCallback(async () => {
+    try {
+      const res = await fetch('/api/showcase')
+      const data: typeof PROJECTS = await res.json()
+      setProjects(PROJECTS.map(project => ({
+        ...project,
+        ...data.find(item => item.id === project.id),
+      })))
+    } catch {}
+  }, [])
+
   // Auto-refresh health khi tab được focus lại sau >5 phút
   useEffect(() => {
     const handler = () => {
@@ -59,12 +71,18 @@ export default function DashboardPage() {
   }, [loadHealth])
 
   useEffect(() => {
-    loadHealth()
-    loadStatus()
-    loadBackupStatus()
+    const timer = window.setTimeout(() => {
+      loadHealth()
+      loadStatus()
+      loadBackupStatus()
+      loadShowcaseContent()
+    }, 0)
     const interval = setInterval(loadStatus, 30000)
-    return () => clearInterval(interval)
-  }, [loadHealth, loadStatus, loadBackupStatus])
+    return () => {
+      window.clearTimeout(timer)
+      clearInterval(interval)
+    }
+  }, [loadHealth, loadStatus, loadBackupStatus, loadShowcaseContent])
 
   function handleDeployStart(projectId: string, runId: number | null) {
     setActiveProjectId(projectId)
@@ -108,6 +126,7 @@ export default function DashboardPage() {
       <VpsStatsBar />
 
       <ProjectGrid
+        projects={projects}
         healthMap={healthMap}
         statusMap={statusMap}
         backupStatusMap={backupStatusMap}
@@ -116,6 +135,9 @@ export default function DashboardPage() {
         onDeployStart={handleDeployStart}
         backingUpProject={backingUpProject && drawerOpen ? backingUpProject : null}
         onBackupStart={handleBackupStart}
+        onShowcaseSaved={project => {
+          setProjects(prev => prev.map(item => item.id === project.id ? { ...item, ...project } : item))
+        }}
       />
 
       <DeployDrawer
