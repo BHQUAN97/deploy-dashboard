@@ -225,7 +225,6 @@ export const PROJECTS: ProjectConfig[] = [
       note: 'Default admin account',
     },
   },
-]
 
   // ─── Web Portfolio Templates ────────────────────────────────
   {
