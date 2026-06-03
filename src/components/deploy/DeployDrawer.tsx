@@ -24,7 +24,12 @@ export function DeployDrawer({ project, runId, open, onClose }: Props) {
 
   useEffect(() => {
     if (!open || !runId || !project) return
-    setJobs([]); setDone(false); setConclusion(null); setRunUrl('')
+    const resetTimer = window.setTimeout(() => {
+      setJobs([])
+      setDone(false)
+      setConclusion(null)
+      setRunUrl('')
+    }, 0)
 
     const es = new EventSource(`/api/runs/${runId}/stream?repo=${project.repo}`)
     esRef.current = es
@@ -62,7 +67,10 @@ export function DeployDrawer({ project, runId, open, onClose }: Props) {
     }
 
     es.onerror = () => es.close()
-    return () => es.close()
+    return () => {
+      window.clearTimeout(resetTimer)
+      es.close()
+    }
   }, [open, runId, project])
 
   return (

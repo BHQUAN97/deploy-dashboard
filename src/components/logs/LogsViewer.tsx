@@ -35,9 +35,12 @@ export function LogsViewer() {
 
   // Reset container khi đổi project
   useEffect(() => {
-    setContainer(project.logContainers[0])
-    setLogs([])
-    setStatus('')
+    const timer = window.setTimeout(() => {
+      setContainer(project.logContainers[0])
+      setLogs([])
+      setStatus('')
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [projectId, project.logContainers])
 
   // Auto scroll to bottom

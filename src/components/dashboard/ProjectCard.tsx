@@ -9,7 +9,8 @@ import { SslBadge } from './SslBadge'
 import { DeployButton } from './DeployButton'
 import { BackupButton } from './BackupButton'
 import { RestartButton } from './RestartButton'
-import { ExternalLink, CheckCircle2, XCircle, HardDrive, Pencil, Clock } from 'lucide-react'
+import { ShowcaseEditDialog } from './ShowcaseEditDialog'
+import { ExternalLink, CheckCircle2, XCircle, HardDrive, Pencil, Clock, FileText } from 'lucide-react'
 
 interface Props {
   project: ProjectConfig
@@ -21,6 +22,7 @@ interface Props {
   isBackingUp?: boolean
   onBackupStart?: (runId: number | null) => void
   latestBackup?: RunInfo | null
+  onShowcaseSaved?: (project: ProjectConfig) => void
 }
 
 function RunDot({ run }: { run: RunInfo }) {
@@ -32,15 +34,19 @@ function RunDot({ run }: { run: RunInfo }) {
   return <div className={`w-2 h-2 rounded-full ${color} shrink-0`} title={title} />
 }
 
-export function ProjectCard({ project, health, loadingHealth, latestRun, isDeploying, onDeployStart, isBackingUp = false, onBackupStart, latestBackup }: Props) {
+export function ProjectCard({ project, health, loadingHealth, latestRun, isDeploying, onDeployStart, isBackingUp = false, onBackupStart, latestBackup, onShowcaseSaved }: Props) {
   const [history, setHistory] = useState<RunInfo[]>([])
   const [notesOpen, setNotesOpen] = useState(false)
   const [notes, setNotes] = useState('')
+  const [showcaseOpen, setShowcaseOpen] = useState(false)
 
   // Load notes từ localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(`note-${project.id}`)
-    if (saved) { setNotes(saved); setNotesOpen(true) }
+    const timer = window.setTimeout(() => {
+      const saved = localStorage.getItem(`note-${project.id}`)
+      if (saved) { setNotes(saved); setNotesOpen(true) }
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [project.id])
 
   // Load deploy history (3 runs)
@@ -152,6 +158,13 @@ export function ProjectCard({ project, health, loadingHealth, latestRun, isDeplo
           <BackupButton project={project} isRunning={isBackingUp} onBackupStart={onBackupStart} />
         )}
         <RestartButton project={project} />
+        <button
+          onClick={() => setShowcaseOpen(true)}
+          className="w-full h-8 rounded-lg border border-zinc-800 bg-zinc-900 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center justify-center gap-1.5"
+        >
+          <FileText className="w-3.5 h-3.5" />
+          Sửa giới thiệu
+        </button>
 
         {/* Notes */}
         <div>
@@ -173,6 +186,12 @@ export function ProjectCard({ project, health, loadingHealth, latestRun, isDeplo
           )}
         </div>
       </CardContent>
+      <ShowcaseEditDialog
+        project={project}
+        open={showcaseOpen}
+        onOpenChange={setShowcaseOpen}
+        onSaved={saved => onShowcaseSaved?.({ ...project, ...saved })}
+      />
     </Card>
   )
 }

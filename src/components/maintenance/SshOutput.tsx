@@ -24,9 +24,14 @@ export function SshOutput({ streamUrl, onDone }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!streamUrl) { setLines([]); setStatus('idle'); setExitCode(null); return }
-    setLines([])
-    setStatus('connecting')
+    const resetTimer = window.setTimeout(() => {
+      setLines([])
+      setStatus(streamUrl ? 'connecting' : 'idle')
+      setExitCode(null)
+    }, 0)
+    if (!streamUrl) {
+      return () => window.clearTimeout(resetTimer)
+    }
 
     const es = new EventSource(streamUrl)
     es.onopen = () => setStatus('running')
@@ -50,7 +55,10 @@ export function SshOutput({ streamUrl, onDone }: Props) {
       }
     }
     es.onerror = () => { setStatus('error'); es.close() }
-    return () => es.close()
+    return () => {
+      window.clearTimeout(resetTimer)
+      es.close()
+    }
   }, [streamUrl, onDone])
 
   useEffect(() => {

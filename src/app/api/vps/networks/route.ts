@@ -1,10 +1,9 @@
-import { NextRequest } from 'next/server'
 import { createSshStream, SSE_HEADERS } from '@/lib/ssh-client'
 import { NETWORKS_TO_FIX, NETWORK_CONTAINERS } from '@/config/vps-domains'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   const connectCmds = NETWORK_CONTAINERS.map(
     c => `docker network connect ${NETWORKS_TO_FIX} ${c} 2>/dev/null && echo "Connected: ${c}" || echo "Skip (already/not found): ${c}"`
   ).join('\n')
