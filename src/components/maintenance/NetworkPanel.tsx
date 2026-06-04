@@ -11,10 +11,7 @@ export function NetworkPanel() {
   function handleFix() {
     setDone(false)
     setStreamUrl(null)
-    // Trigger POST then redirect to GET stream
-    fetch('/api/vps/networks', { method: 'POST' })
-      .then(() => setStreamUrl('/api/vps/networks-stream'))
-      .catch(() => {})
+    setStreamUrl('/api/vps/networks-stream')
   }
 
   return (

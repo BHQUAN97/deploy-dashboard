@@ -34,7 +34,7 @@ export function BackupAllPanel() {
       const project = backupProjects[i]
       try {
         const res = await fetch(`/api/backup/${project.repo}`, { method: 'POST' })
-        const data = await res.json()
+        const data = await readJson(res)
         setResults(prev => prev.map(r =>
           r.projectId === project.id
             ? { ...r, status: res.ok ? 'triggered' : 'error', runId: data.runId ?? null, url: data.url ?? null, error: res.ok ? undefined : data.error }
@@ -100,4 +100,12 @@ export function BackupAllPanel() {
       )}
     </div>
   )
+}
+
+async function readJson(res: Response): Promise<{ runId?: number | null; url?: string | null; error?: string }> {
+  try {
+    return await res.json()
+  } catch {
+    return { error: await res.text().catch(() => '') }
+  }
 }

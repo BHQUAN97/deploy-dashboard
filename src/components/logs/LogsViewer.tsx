@@ -8,6 +8,7 @@ import { Play, Square, RefreshCw, Trash2, Download } from 'lucide-react'
 type LogLine = { text: string; isStderr: boolean; ts: string }
 type Source = 'docker' | 'file'
 type Lines = 50 | 100 | 200 | 500
+const LOG_PROJECTS = PROJECTS.filter(p => p.logContainers.length > 0)
 
 function colorize(line: string): string {
   const l = line.toLowerCase()
@@ -18,8 +19,8 @@ function colorize(line: string): string {
 }
 
 export function LogsViewer() {
-  const [projectId, setProjectId] = useState(PROJECTS[0].id)
-  const [container, setContainer] = useState(PROJECTS[0].logContainers[0])
+  const [projectId, setProjectId] = useState(LOG_PROJECTS[0]?.id ?? '')
+  const [container, setContainer] = useState(LOG_PROJECTS[0]?.logContainers[0] ?? '')
   const [source, setSource] = useState<Source>('docker')
   const [lines, setLines] = useState<Lines>(200)
   const [filter, setFilter] = useState('')
@@ -31,17 +32,17 @@ export function LogsViewer() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const autoScrollRef = useRef(true)
 
-  const project = PROJECTS.find(p => p.id === projectId)!
+  const project = LOG_PROJECTS.find(p => p.id === projectId)
 
   // Reset container khi đổi project
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setContainer(project.logContainers[0])
+      setContainer(project?.logContainers[0] ?? '')
       setLogs([])
       setStatus('')
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [projectId, project.logContainers])
+  }, [projectId, project])
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -57,6 +58,10 @@ export function LogsViewer() {
   }, [])
 
   async function fetchLogs() {
+    if (!project || !container) {
+      setStatus('Project này chưa cấu hình log container')
+      return
+    }
     stopStream()
     setLoading(true)
     setLogs([])
@@ -75,6 +80,10 @@ export function LogsViewer() {
   }
 
   function startStream() {
+    if (!project || !container) {
+      setStatus('Project này chưa cấu hình log container')
+      return
+    }
     stopStream()
     setLogs([])
     setStatus('Connecting...')
@@ -136,7 +145,7 @@ export function LogsViewer() {
             onChange={e => setProjectId(e.target.value)}
             className="h-8 px-2 text-sm bg-zinc-800 border border-zinc-700 rounded text-zinc-200 focus:outline-none"
           >
-            {PROJECTS.map(p => (
+            {LOG_PROJECTS.map(p => (
               <option key={p.id} value={p.id}>{p.icon} {p.name}</option>
             ))}
           </select>
@@ -150,7 +159,7 @@ export function LogsViewer() {
             onChange={e => setContainer(e.target.value)}
             className="h-8 px-2 text-sm bg-zinc-800 border border-zinc-700 rounded text-zinc-200 focus:outline-none"
           >
-            {project.logContainers.map(c => (
+            {(project?.logContainers ?? []).map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
@@ -170,7 +179,7 @@ export function LogsViewer() {
               onClick={() => setSource('file')}
               className={`px-3 text-xs transition-colors border-l border-zinc-700 ${source === 'file' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
             >
-              {project.logFile ?? '/app/logs/error.log'}
+              {project?.logFile ?? '/app/logs/error.log'}
             </button>
           </div>
         </div>
@@ -190,7 +199,7 @@ export function LogsViewer() {
 
         {/* Actions */}
         <div className="flex gap-2 ml-auto">
-          <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading || streaming}
+          <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading || streaming || !project || !container}
             className="h-8 text-xs border-zinc-700 text-zinc-300 hover:text-white">
             <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
             Fetch
@@ -200,7 +209,7 @@ export function LogsViewer() {
                 className="h-8 text-xs bg-red-700 hover:bg-red-600 text-white">
                 <Square className="w-3.5 h-3.5 mr-1.5" />Stop
               </Button>
-            : <Button size="sm" onClick={startStream}
+            : <Button size="sm" onClick={startStream} disabled={!project || !container}
                 className="h-8 text-xs bg-emerald-700 hover:bg-emerald-600 text-white">
                 <Play className="w-3.5 h-3.5 mr-1.5" />Live Tail
               </Button>

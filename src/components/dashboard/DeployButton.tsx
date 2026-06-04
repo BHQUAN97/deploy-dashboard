@@ -21,10 +21,10 @@ export function DeployButton({ project, isDeploying, onDeployStart }: Props) {
     setError(null)
     try {
       const res = await fetch(`/api/deploy/${project.repo}`, { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Deploy failed'); return }
+      const data = await readJson(res)
+      if (!res.ok) { setError(data.error ?? `Deploy failed (${res.status})`); return }
       setShowConfirm(false)
-      onDeployStart(data.runId)
+      onDeployStart(data.runId ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Network error')
     } finally {
@@ -67,4 +67,12 @@ export function DeployButton({ project, isDeploying, onDeployStart }: Props) {
       </Dialog>
     </>
   )
+}
+
+async function readJson(res: Response): Promise<{ runId?: number | null; error?: string }> {
+  try {
+    return await res.json()
+  } catch {
+    return { error: await res.text().catch(() => '') }
+  }
 }

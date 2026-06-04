@@ -1,12 +1,20 @@
 import { NextRequest } from 'next/server'
 import { getRunWithJobs, RunWithJobs } from '@/lib/github'
+import { getProjectByRepo } from '@/config/projects'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ runId: string }> }) {
   const { runId } = await params
   const repo = req.nextUrl.searchParams.get('repo') ?? ''
-  const numericRunId = parseInt(runId)
+  const numericRunId = Number.parseInt(runId, 10)
+
+  if (!Number.isFinite(numericRunId) || numericRunId <= 0) {
+    return new Response('Invalid run id', { status: 400 })
+  }
+  if (!getProjectByRepo(repo)) {
+    return new Response('Project not found', { status: 404 })
+  }
 
   const encoder = new TextEncoder()
 

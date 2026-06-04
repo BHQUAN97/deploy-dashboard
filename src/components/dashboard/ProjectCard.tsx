@@ -157,7 +157,7 @@ export function ProjectCard({ project, health, loadingHealth, latestRun, isDeplo
         {project.backupWorkflow && onBackupStart && (
           <BackupButton project={project} isRunning={isBackingUp} onBackupStart={onBackupStart} />
         )}
-        <RestartButton project={project} />
+        {project.containers.length > 0 && <RestartButton project={project} />}
         <button
           onClick={() => setShowcaseOpen(true)}
           className="w-full h-8 rounded-lg border border-zinc-800 bg-zinc-900 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center justify-center gap-1.5"

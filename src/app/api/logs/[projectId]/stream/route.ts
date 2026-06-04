@@ -12,10 +12,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
   const { searchParams } = new URL(req.url)
   const container = searchParams.get('container') ?? project.logContainers[0]
   const source = searchParams.get('source') ?? 'docker'
-  const tail = Math.min(parseInt(searchParams.get('tail') ?? '50'), 200)
+  const requestedTail = Number.parseInt(searchParams.get('tail') ?? '50', 10)
+  const tail = Number.isFinite(requestedTail) ? Math.min(Math.max(requestedTail, 1), 200) : 50
 
   if (!project.logContainers.includes(container)) {
     return new Response('Container not allowed', { status: 400 })
+  }
+  if (source !== 'docker' && source !== 'file') {
+    return new Response('Source must be docker or file', { status: 400 })
   }
 
   let cmd: string
