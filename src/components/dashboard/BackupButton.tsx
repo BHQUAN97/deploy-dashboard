@@ -21,10 +21,10 @@ export function BackupButton({ project, isRunning, onBackupStart }: Props) {
     setError(null)
     try {
       const res = await fetch(`/api/backup/${project.repo}`, { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Backup failed'); return }
+      const data = await readJson(res)
+      if (!res.ok) { setError(data.error ?? `Backup failed (${res.status})`); return }
       setShowConfirm(false)
-      onBackupStart(data.runId)
+      onBackupStart(data.runId ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Network error')
     } finally {
@@ -75,4 +75,12 @@ export function BackupButton({ project, isRunning, onBackupStart }: Props) {
       </Dialog>
     </>
   )
+}
+
+async function readJson(res: Response): Promise<{ runId?: number | null; error?: string }> {
+  try {
+    return await res.json()
+  } catch {
+    return { error: await res.text().catch(() => '') }
+  }
 }

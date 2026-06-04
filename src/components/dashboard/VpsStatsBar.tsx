@@ -23,7 +23,14 @@ export function VpsStatsBar() {
       .catch(() => setError(true))
   }, [])
 
-  if (error) return null
+  if (error) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-amber-800/60 bg-amber-950/20 px-3 py-2 text-xs text-amber-300">
+        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+        Không tải được VPS stats. Kiểm tra SSH env hoặc kết nối VPS.
+      </div>
+    )
+  }
   if (!stats) {
     return (
       <div className="grid grid-cols-2 md:flex gap-2 md:gap-4">
